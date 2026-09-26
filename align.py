@@ -4,6 +4,10 @@ Nao transcreve -- so descobre ONDE cada palavra do roteiro comeca/termina no aud
 
 Uso:
     uv run align.py projects/<slug-do-video>
+
+Aceita tanto um narration.mp3 unico quanto varias partes numeradas em
+narration-parts/NN.mp3 (concatenadas automaticamente com 1s de silencio
+entre elas -- ver narration.py).
 """
 
 import json
@@ -12,6 +16,8 @@ import sys
 from pathlib import Path
 
 import stable_whisper
+
+from narration import ensure_narration
 
 TAG_PATTERN = re.compile(r"\[[^\]]*\]")
 
@@ -24,12 +30,11 @@ def strip_voice_tags(text: str) -> str:
 
 def main(project_dir: Path) -> None:
     script_path = project_dir / "script.txt"
-    audio_path = project_dir / "narration.mp3"
 
     if not script_path.exists():
         sys.exit(f"Nao encontrei {script_path}")
-    if not audio_path.exists():
-        sys.exit(f"Nao encontrei {audio_path}")
+
+    audio_path = ensure_narration(project_dir)
 
     raw_text = script_path.read_text(encoding="utf-8")
     clean_text = strip_voice_tags(raw_text)
