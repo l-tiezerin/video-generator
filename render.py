@@ -56,6 +56,25 @@ def find_font() -> str:
         return FONT_FALLBACK
     return FONT_NAME
 
+def normalize_image_filenames(images_dir: Path) -> None:
+    """Renomeia imagens para o padrao NN.ext quando ha texto extra apos os
+    dois primeiros digitos (ex: 01_textoaqui.jpg -> 01.jpg). Assume que os
+    dois primeiros caracteres do nome sao sempre o indice."""
+    for img_path in sorted(images_dir.iterdir()):
+        if not img_path.is_file():
+            continue
+        stem, suffix = img_path.stem, img_path.suffix
+        if len(stem) < 2 or not stem[:2].isdigit():
+            continue
+        new_name = f"{stem[:2]}{suffix}"
+        if img_path.name == new_name:
+            continue
+        new_path = images_dir / new_name
+        if new_path.exists():
+            sys.exit(f"Conflito ao renomear {img_path.name} -> {new_name}: ja existe")
+        img_path.rename(new_path)
+        print(f"Renomeado: {img_path.name} -> {new_name}")
+
 
 def prepare_font_dir(font_name: str, tmp_dir: Path) -> Path:
     """Copia so o arquivo da fonte resolvida para um diretorio isolado --
@@ -178,6 +197,8 @@ def main(project_dir: Path) -> None:
     manifest_path = project_dir / "image_manifest.json"
     narration_path = project_dir / "narration.mp3"
     images_dir = project_dir / "images"
+
+    normalize_image_filenames(images_dir)
 
     for p in (words_path, manifest_path, narration_path):
         if not p.exists():
